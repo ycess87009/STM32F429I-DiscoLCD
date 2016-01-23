@@ -491,6 +491,8 @@ void prvButtonTask(void *pvParameters)
 						}
 					}
 				} else if (((GEventGWinButton*)pe)->button == InternetBtn) {
+					SIMCOM_OpenNetwork();
+					simcom_http_request("www.tutorialspoint.com/index.htm",80);
 				}
 				break;
 			default:

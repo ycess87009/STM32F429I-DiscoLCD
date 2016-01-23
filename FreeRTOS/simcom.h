@@ -15,4 +15,7 @@ void SIMCOM_HangUp();
 int SIMCOM_ReadSMS(SMS_STRUCT sms[3]);
 
 void SIMCOM_Test();
+
+void simcom_http_request(char* url,int port);
+void SIMCOM_OpenNetwork();
 #endif

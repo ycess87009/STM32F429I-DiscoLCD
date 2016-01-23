@@ -94,10 +94,10 @@ void SIMCOM_Init()
     /* Init USART communication between STM and SIMCOM module */
     TM_USART_Init(USART1, TM_USART_PinsPack_1, 115200);
 
-    //#ifdef DBG
+    #ifdef DBG
     /* Init USART Communication between PC and STM, use for debug */
     TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
-    //#endif
+    #endif
 
     while(1) {
         dbg_puts("Try initilize communication between STM32 & SIMCOM module\n\r");
@@ -385,56 +385,72 @@ void SIMCOM_Test()
     }
 }
 
-int SIMCOM_OpenNetwork()
+void SIMCOM_OpenNetwork()
 {
+    #ifdef DBG
+    /* Init USART Communication between PC and STM, use for debug */
+    TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
+    #endif
     char response[32];
-    if(!(SendCmd_Check("AT+CGSOCKCONT=1,\"IP\",\"internet\"","OK") && SendCmd_Check("AT+CSOCKSETPN=1","OK") && SendCmd_Check("AT+CIPMODE=1","OK") ))
-    {
-        dbg_puts("Failed to initialize APN\n");
-        return 0;
+    while(1) {
+        if(SendCmd_Check("AT+CGSOCKCONT=1,\"IP\",\"internet\"", "OK")) {
+            dbg_puts("AT+CGSOCKCONT=1,\"IP\",\"internet\" successful!\n\r");
+            break;
+        }
+
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
-    SendCmd("AT+NETOPEN");
-    while(strlen(response)==0)   //wait for response
-        RecvResponse(response);
-    if(!strstr(response,"+netopen: 0"))//ERROR
-    {
-        dbg_puts("Something wrong on At+NETOPEN\n");
-        return 0;
+    while(1) {
+        if(SendCmd_Check("AT+CSOCKSETPN=1", "OK")) {
+            dbg_puts("AT+CGSOCKSETPN=1 successful!\n\r");
+            break;
+        }
+
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+    }
+    while(1) {
+        if(SendCmd_Check("AT+CIPMODE=0", "OK")) {
+            dbg_puts("AT+CIPMODE=0 successful!\n\r");
+            break;
+        } else break;
+
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+    }
+    while(1) {
+        if(SendCmd_Check("AT+NETOPEN", "OK")) {
+            dbg_puts("AT+NETOPEN successful!\n\r");
+            break;
+        } else if(SendCmd_Check("AT+NETOPEN", "already")){
+			break;
+		}
+
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
     
     SendCmd("AT+IPADDR");
     SendCmd("AT+CHTTPSSTART");
-    return 1;
-
 }
+
 //Ex simcom_http_request("http://www.tutorialspoint.com/index.htm",80)
-void simcom_http_request(const char * url,int port)
+void simcom_http_request(char* url,int port)
 {
     char request[512];
     char response[512];
     char cmd[64];
     char host[32];
     char relative_path[128];
-    char *test=url;
+	dbg_puts("I am in the http request function\r\n");
     if(port>65535 || port<0)
     {
         dbg_puts("Port number is out of range\n");
         return ;
     }
-    if(!strncmp("http://",test,7))
-    {
-        test+=7;
-        dbg_puts("It's HTTP protocol\n");
-    }
-    else if(!strncmp("https://",test,8))
-    {
-        test+=8;
-        dbg_puts("It's HTTPS protocol\n");
-        return ;
-    }
-    int length=strstr(test,"/")-test;
-    strncpy(host,test,length);
-    strncpy(relative_path,test+length,strlen(test+length));
+
+	if( strstr(url,"//") ) url = strstr(url,"//")+2;
+
+	strcpy(host,url);
+	strncpy(strstr(host,"/"),"\0",1);
+	puts(host);
 
     sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port);
 
