@@ -481,12 +481,12 @@ void simcom_https_request(const char * url,int port)
     {
         test+=7;
         dbg_puts("It's HTTP protocol\n");
+        return ;
     }
     else if(!strncmp("https://",test,8))
     {
         test+=8;
         dbg_puts("It's HTTPS protocol\n");
-        return ;
     }
     int length=strstr(test,"/")-test;
     strncpy(host,test,length);
