@@ -92,10 +92,10 @@ void SIMCOM_Init()
     /* Init USART communication between STM and SIMCOM module */
     TM_USART_Init(USART1, TM_USART_PinsPack_1, 115200);
 
-//#ifdef DBG
+    //#ifdef DBG
     /* Init USART Communication between PC and STM, use for debug */
     TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
-//#endif
+    //#endif
 
     while(1) {
         dbg_puts("Try initilize communication between STM32 & SIMCOM module\n\r");
@@ -296,7 +296,7 @@ int SIMCOM_ReadSMS(SMS_STRUCT sms[3])
         count++;
     }
 
-//#ifdef DBG
+    //#ifdef DBG
     int i;
 
     dbg_puts("Message\n\r");
@@ -307,7 +307,7 @@ int SIMCOM_ReadSMS(SMS_STRUCT sms[3])
         dbg_puts(sms[i].content);
         dbg_puts("\n\r");
     }
-//#endif
+    //#endif
 
     return count;
 }
@@ -428,9 +428,8 @@ void simcom_http_request(const char * url,int port)
     int length=strstr(test,"/")-test;
     strncpy(host,test,length);
     strncpy(relative_path,test+length,strlen(test+length));
-    dbg_puts("host: %s\npath: %s\n",host,relative_path);
 
-    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port)
+    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port);
 
     SendCmd(cmd);
 
@@ -442,16 +441,16 @@ void simcom_http_request(const char * url,int port)
         dbg_puts("Something wrong on AT+CHTTPACT\n");
         return ;
     }
-    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host)
+    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host);
 
-        SendCmd(request);//though it sends two additional characters,the sim module will discard.
+    SendCmd(request);//though it sends two additional characters,the sim module will discard.
 
     //Start to receive packet
-    //FIXME:this only output to debug channel 
+    //FIXME:this only output to debug channel
     while(RecvResponse(response))
     {
         dbg_puts(response);
-        if(!strncmp(response[strlen(response)-13],"+CHTTPACT: 0",12))//+CHTTPACT: 0
+        if(!strstr(response,"+CHTTPACT: 0"))//+CHTTPACT: 0
             break;
         response="\0";
     }
@@ -484,8 +483,7 @@ void simcom_https_request(const char * url,int port)
     int length=strstr(test,"/")-test;
     strncpy(host,test,length);
     strncpy(relative_path,test+length,strlen(test+length));
-    dbg_puts("host: %s\npath: %s\n",host,relative_path);
-    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port)
+    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port);
 
     if(!SendCmd_Check(cmd,"OK"))
     {
@@ -493,8 +491,8 @@ void simcom_https_request(const char * url,int port)
         return ;
     }
 
-    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host)
-    sprintf(cmd,"AT+CHTTPSSEND=%d",strlen(request))
+    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host);
+    sprintf(cmd,"AT+CHTTPSSEND=%d",strlen(request));
     SemdCmd(cmd);
 
     while(strlen(response)==0)   //wait for response : >
@@ -513,15 +511,17 @@ void simcom_https_request(const char * url,int port)
 
     //Start to receive packet
 
-    //FIXME:this only output to debug channel 
+    //FIXME:this only output to debug channel
     while(RecvResponse(response))
     {
         dbg_puts(response);
-        if(!strncmp(response[strlen(response)-15],"+CHTTPSRECV: 0",14))//+CHTTPACT: 0
+        
+        if(!strstr(response,"+CHTTPSRECV: 0"))//+CHTTPACT: 0
         {
             SendCmd("AT+CHTTPSRECV=450");
             break;
-        }response="\0";
+        }
+        response="\0";
     }
 }
 
