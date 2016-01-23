@@ -11,17 +11,17 @@
 
 SemaphoreHandle_t xMutex;
 
-#ifdef DBG
+//#ifdef DBG
 static void dbg_puts(char *str)
 {
     TM_USART_Puts(USART6, str);
 }
-#else
-static void dbg_puts(char *str)
-{
+//#else
+//static void dbg_puts(char *str)
+//{
 
-}
-#endif
+//}
+//#endif
 
 static void RecvResponse(char *response)
 {
@@ -92,10 +92,10 @@ void SIMCOM_Init()
     /* Init USART communication between STM and SIMCOM module */
     TM_USART_Init(USART1, TM_USART_PinsPack_1, 115200);
 
-#ifdef DBG
+//#ifdef DBG
     /* Init USART Communication between PC and STM, use for debug */
     TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
-#endif
+//#endif
 
     while(1) {
         dbg_puts("Try initilize communication between STM32 & SIMCOM module\n\r");
@@ -296,7 +296,7 @@ int SIMCOM_ReadSMS(SMS_STRUCT sms[3])
         count++;
     }
 
-#ifdef DBG
+//#ifdef DBG
     int i;
 
     dbg_puts("Message\n\r");
@@ -307,7 +307,7 @@ int SIMCOM_ReadSMS(SMS_STRUCT sms[3])
         dbg_puts(sms[i].content);
         dbg_puts("\n\r");
     }
-#endif
+//#endif
 
     return count;
 }
