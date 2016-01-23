@@ -230,7 +230,7 @@ int SIMCOM_CheckPhone()
 {
     char recv[64];
     int result = 0;
-   
+
     if(xSemaphoreTake(xMutex, (TickType_t) 10000) == pdTRUE) {
         dbg_puts("Check coming call\n\r");
         RecvResponse(recv);
@@ -323,7 +323,7 @@ void SIMCOM_SendSMS(char *number, char *content)
     strcat(cmd, content);
     strcat(cmd, "\"");
 
-    dbg_puts("Sned message to ");
+    dbg_puts("Send message to ");
     dbg_puts(number);
     dbg_puts("\n\r");
     SendCmd(cmd);
@@ -377,8 +377,151 @@ void SIMCOM_Test()
                 default:
                     break;
             }
-			dbg_puts("Test\n\r");
+            dbg_puts("Test\n\r");
         }
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
+
+int SIMCOM_OpenNetwork()
+{
+    if(!(SendCmd_check("AT+CGSOCKCONT=1,\"IP\",\"internet\"","OK") && SendCmd_check("AT+CSOCKSETPN=1","OK") && SendCmd_check("AT+CIPMODE=1","OK") ))
+    {
+        dbg_puts("Failed to initialize APN\n");
+        return 0;
+    }
+    if(!SendCmd_check("AT+NETOPEN","OK\n\n+NETOPEN:0\n"))
+    {
+        dbg_puts("Failed to open network\n");
+        return 0;
+    }
+    SendCmd("AT+IPADDR");
+    SendCmd("AT+CHTTPSSTART");
+    return 1;
+
+}
+//Ex simcom_http_request("http://www.tutorialspoint.com/index.htm",80)
+void simcom_http_request(const char * url,int port)
+{
+    char request[512];
+    char response[512];
+    char cmd[64];
+    char host[32];
+    char relative_path[128];
+    char *test=url;
+    if(port>65535 || port<0)
+    {
+        dbg_puts("Port number is out of range\n");
+        return ;
+    }
+    if(!strncmp("http://",test,7))
+    {
+        test+=7;
+        dbg_puts("It's HTTP protocol\n");
+    }
+    else if(!strncmp("https://",test,8))
+    {
+        test+=8;
+        dbg_puts("It's HTTPS protocol\n");
+        return ;
+    }
+    int length=strstr(test,"/")-test;
+    strncpy(host,test,length);
+    strncpy(relative_path,test+length,strlen(test+length));
+    dbg_puts("host: %s\npath: %s\n",host,relative_path);
+
+    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port)
+
+    SendCmd(cmd);
+
+    //FIXME:this only check if error or not 
+    while(strlen(response)==0)   //wait for response : +CHTTPACT:REQUEST/ERROR
+        RecvResponse(response);
+    if(!strncmp(response,"+CHTTPACT: REQUEST",18))//ERROR
+    {
+        dbg_puts("Something wrong on AT+CHTTPACT\n");
+        return ;
+    }
+    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host)
+
+        SendCmd(request);//though it sends two additional characters,the sim module will discard.
+
+    //Start to receive packet
+    //FIXME:this only output to debug channel 
+    while(RecvResponse(response))
+    {
+        dbg_puts(response);
+        if(!strncmp(response[strlen(response)-13],"+CHTTPACT: 0",12))//+CHTTPACT: 0
+            break;
+        response="\0";
+    }
+}
+
+void simcom_https_request(const char * url,int port)
+{
+    char request[512];
+    char response[512];
+    char cmd[64];
+    char host[32];
+    char relative_path[128];
+    char *test=url;
+    if(port>65535 || port<0)
+    {
+        dbg_puts("Port number is out of range\n");
+        return ;
+    }
+    if(!strncmp("http://",test,7))
+    {
+        test+=7;
+        dbg_puts("It's HTTP protocol\n");
+    }
+    else if(!strncmp("https://",test,8))
+    {
+        test+=8;
+        dbg_puts("It's HTTPS protocol\n");
+        return ;
+    }
+    int length=strstr(test,"/")-test;
+    strncpy(host,test,length);
+    strncpy(relative_path,test+length,strlen(test+length));
+    dbg_puts("host: %s\npath: %s\n",host,relative_path);
+    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port)
+
+    if(!SendCmd_Check(cmd,"OK"))
+    {
+        dbg_puts("Fail to connect to host\n");
+        return ;
+    }
+
+    sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host)
+    sprintf(cmd,"AT+CHTTPSSEND=%d",strlen(request))
+    SemdCmd(cmd);
+
+    while(strlen(response)==0)   //wait for response : >
+        RecvResponse(response);
+    if(!strncmp(response,">",))
+    {
+        dbg_puts("Something wrong on AT+CHTTPSSEND\n");
+        return ;
+    }
+
+    SendCmd_Check(request,"OK");//though it sends two additional characters,the sim module will discard.
+    //FIXME: The check string maybe wrong 
+    SendCmd_Check("AT+CHTTPSSEND","OK\r\n\r\nCHTTPSSEND: 0");
+
+    SendCmd("AT+CHTTPSRECV=450");
+
+    //Start to receive packet
+
+    //FIXME:this only output to debug channel 
+    while(RecvResponse(response))
+    {
+        dbg_puts(response);
+        if(!strncmp(response[strlen(response)-15],"+CHTTPSRECV: 0",14))//+CHTTPACT: 0
+        {
+            SendCmd("AT+CHTTPSRECV=450");
+            break;
+        }response="\0";
+    }
+}
+
