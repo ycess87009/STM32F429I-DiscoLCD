@@ -1,5 +1,7 @@
 #include "simcom.h"
 #include <stm32f4xx.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "tm_stm32f4_usart.h"
 
@@ -385,16 +387,21 @@ void SIMCOM_Test()
 
 int SIMCOM_OpenNetwork()
 {
-    if(!(SendCmd_check("AT+CGSOCKCONT=1,\"IP\",\"internet\"","OK") && SendCmd_check("AT+CSOCKSETPN=1","OK") && SendCmd_check("AT+CIPMODE=1","OK") ))
+    char response[32];
+    if(!(SendCmd_Check("AT+CGSOCKCONT=1,\"IP\",\"internet\"","OK") && SendCmd_Check("AT+CSOCKSETPN=1","OK") && SendCmd_Check("AT+CIPMODE=1","OK") ))
     {
         dbg_puts("Failed to initialize APN\n");
         return 0;
     }
-    if(!SendCmd_check("AT+NETOPEN","OK\n\n+NETOPEN:0\n"))
+    SendCmd("AT+NETOPEN");
+    while(strlen(response)==0)   //wait for response
+        RecvResponse(response);
+    if(!strstr(response,"+netopen: 0"))//ERROR
     {
-        dbg_puts("Failed to open network\n");
+        dbg_puts("Something wrong on At+NETOPEN\n");
         return 0;
     }
+    
     SendCmd("AT+IPADDR");
     SendCmd("AT+CHTTPSSTART");
     return 1;
@@ -447,12 +454,13 @@ void simcom_http_request(const char * url,int port)
 
     //Start to receive packet
     //FIXME:this only output to debug channel
-    while(RecvResponse(response))
+    while(1)
     {
+        RecvResponse(response);
         dbg_puts(response);
         if(!strstr(response,"+CHTTPACT: 0"))//+CHTTPACT: 0
             break;
-        response="\0";
+        strcpy(response,"");
     }
 }
 
@@ -493,11 +501,11 @@ void simcom_https_request(const char * url,int port)
 
     sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host);
     sprintf(cmd,"AT+CHTTPSSEND=%d",strlen(request));
-    SemdCmd(cmd);
+    SendCmd(cmd);
 
     while(strlen(response)==0)   //wait for response : >
         RecvResponse(response);
-    if(!strncmp(response,">",))
+    if(!strncmp(response,">",1));
     {
         dbg_puts("Something wrong on AT+CHTTPSSEND\n");
         return ;
@@ -512,16 +520,16 @@ void simcom_https_request(const char * url,int port)
     //Start to receive packet
 
     //FIXME:this only output to debug channel
-    while(RecvResponse(response))
+    while(1)
     {
+        RecvResponse(response);
         dbg_puts(response);
-        
         if(!strstr(response,"+CHTTPSRECV: 0"))//+CHTTPACT: 0
         {
             SendCmd("AT+CHTTPSRECV=450");
             break;
         }
-        response="\0";
+        strcpy(response,"");
     }
 }
 
