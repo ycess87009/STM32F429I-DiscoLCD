@@ -434,6 +434,10 @@ void SIMCOM_OpenNetwork()
 //Ex simcom_http_request("http://www.tutorialspoint.com/index.htm",80)
 void simcom_http_request(char* url,int port)
 {
+    #ifdef DBG
+    /* Init USART Communication between PC and STM, use for debug */
+    TM_USART_Init(USART6, TM_USART_PinsPack_1, 115200);
+    #endif
     char request[512];
     char response[512];
     char cmd[64];
@@ -450,20 +454,26 @@ void simcom_http_request(char* url,int port)
 
 	strcpy(host,url);
 	strncpy(strstr(host,"/"),"\0",1);
-	puts(host);
 
-    sprintf(cmd,"AT+CHTTPACT=0,\"TCP\",\"%s\",%d",host,port);
+    sprintf(cmd,"AT+CHTTPACT=\"%s\",%d",host,port);
 
     SendCmd(cmd);
 
     //FIXME:this only check if error or not 
-    while(strlen(response)==0)   //wait for response : +CHTTPACT:REQUEST/ERROR
-        RecvResponse(response);
-    if(!strncmp(response,"+CHTTPACT: REQUEST",18))//ERROR
+
+    // wait for response : +CHTTPACT:REQUEST/ERROR
+	RecvResponse(response);
+	dbg_puts("recieve: ");
+	dbg_puts(response);
+
+    if(strncmp(response,"+CHTTPACT: REQUEST",18))//ERROR
     {
-        dbg_puts("Something wrong on AT+CHTTPACT\n");
+        dbg_puts("Something wrong on AT+CHTTPACT\r\n");
         return ;
-    }
+    } else {
+		dbg_puts("get succeed!\r\n");
+	}
+
     sprintf(request,"GET %s HTTP/1.1\r\nHost: %s\r\n\r\n\r\n",relative_path,host);
 
     SendCmd(request);//though it sends two additional characters,the sim module will discard.
