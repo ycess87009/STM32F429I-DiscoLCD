@@ -10,7 +10,7 @@ extern GListener gl;
 GHandle  MainMenuContainer, KeypadContainer, CallContainer, MsgContainer, CallOutContainer, CallInContainer, ReadMsgContainer;
 
 // Button & Label Handle
-GHandle	RETURNBtn, PHONEBtn, READSMSBtn, WRITESMSBtn, CallBtn, CancelBtn, OneBtn, TwoBtn, ThreeBtn, FourBtn, FiveBtn, SixBtn, SevenBtn, EightBtn, NineBtn, StarBtn, ZeroBtn, JingBtn, AnswerBtn, DeclineBtn, HangoffBtn, BackspaceBtn, SendBtn, SwapBtn;
+GHandle	RETURNBtn, PHONEBtn, READSMSBtn, WRITESMSBtn, CallBtn, CancelBtn, OneBtn, TwoBtn, ThreeBtn, FourBtn, FiveBtn, SixBtn, SevenBtn, EightBtn, NineBtn, StarBtn, ZeroBtn, JingBtn, AnswerBtn, DeclineBtn, HangoffBtn, BackspaceBtn, SendBtn, SwapBtn, InternetBtn;
 GHandle  NumLabel, MsgLabel[3], TargetLabel, IncomingLabel, OutgoingLabel, ReadMsgLabel[10];
 uint32_t char_in_button(char c, uint32_t btn)
 {
@@ -242,6 +242,10 @@ void createsMain(void)
 	wi.g.y += wi.g.height + 3;
 	wi.text = "READ SMS";
 	READSMSBtn = gwinButtonCreate(0, &wi);
+
+	wi.g.y += wi.g.height + 3;
+	wi.text = "INTERNET";
+	InternetBtn = gwinButtonCreate(0, &wi);
 }
 
 void createsCall(void)
