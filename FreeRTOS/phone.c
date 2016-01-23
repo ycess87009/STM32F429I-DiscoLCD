@@ -6,6 +6,9 @@
 /* mylib include */
 #include "mylib.h"
 
+/* Ring */
+#include "stm32f4xx_gpio.h"
+
 // Event Listener
 GListener gl;
 
@@ -526,12 +529,37 @@ void prvButtonTask(void *pvParameters)
  * when calling income. So we check manually every
  * time period.
  */
+void Ring()
+{
+	GPIO_SetBits(GPIOD, GPIO_Pin_15);
+}
+
+void NoRing()
+{
+	GPIO_ResetBits(GPIOD, GPIO_Pin_15);
+}
 void prvIncomingTask(void *pvParameters)
 {
     TickType_t xLastWakeTime;
 
     // Initialize the xLastWakeTime variable with current time.
-    xLastWakeTime = xTaskGetTickCount();
+ 	GPIO_InitTypeDef GPIO_InitStruct;
+
+	/* Clock for GPIOD */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+
+	/* Alternating functions for pins */
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM4);
+
+	/* Set pins */
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_15; 
+	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_Init(GPIOD, &GPIO_InitStruct);
+	
+   	xLastWakeTime = xTaskGetTickCount();
 
     while(1) {
         vTaskDelayUntil(&xLastWakeTime, INCOMING_TASK_DELAY);
@@ -546,7 +574,10 @@ void prvIncomingTask(void *pvParameters)
 				vTaskResume( Phone_Handle );
 			}
             next = INCOMING;
-			
+			Ring();
         }
+		else {
+			NoRing();
+		}
     }
 }
