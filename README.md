@@ -1,14 +1,6 @@
 STM32F429I-DiscoLCD
 ===================
-This project is a part of the DiscoPhone project which is our embedded class project in 2014.
+This project is a part of the DiscoPhone project which is our embedded class project in 2015.
 
-I split the DiscoPhone project into three parts
-* [DiscoLCD](https://github.com/STM32F429I-DiscoPhone/STM32F429I-DiscoLCD)
-* [F9-microkernel porting](https://github.com/STM32F429I-DiscoPhone/f9-kerenl-porting)
-* [ZTK-SIM900A GPRS module APIs](https://github.com/STM32F429I-DiscoPhone/ZTK-SIM900A)
-
-DiscoLCD
-========
-In this part we want to build our DiscoPhone's UI and control flow.
-
-Implementing UI with ugfx on FreeRTOS, will port to F9-microkernel once F9 porting is ready.
+* Demo Picture
+<img src="https://scontent-tpe1-1.xx.fbcdn.net/hphotos-xaf1/v/t35.0-12/12631257_1101129166574017_378544253_o.jpg?oh=c3224691e2024bed1139b07df0f7a071&oe=56A715CC" />
